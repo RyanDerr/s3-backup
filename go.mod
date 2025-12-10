@@ -1,4 +1,4 @@
-module RyanDerr-S3-Backups
+module s3-backup
 
 go 1.24.1
 
