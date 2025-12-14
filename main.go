@@ -1,16 +1,23 @@
 package main
 
 import (
+	"context"
 	"log/slog"
-
-	"github.com/aws/aws-sdk-go-v2/config"
+	"os"
+	s3Cfg "s3-backup/internal/config/s3"
 )
 
+func init() {
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})))
+}
+
 func main() {
-	cfg, err := config.LoadDefaultConfig()
+	s3Config, err := s3Cfg.NewS3Config(context.Background())
 	if err != nil {
-		slog.Error("unable to load AWS SDK from config", err)
+		slog.Error("failed to create S3 config", "error", err)
 		return
 	}
+
+	slog.Info("S3 Config created", "region", s3Config.GetRegion())
 
 }
