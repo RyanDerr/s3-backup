@@ -4,7 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
-	s3Cfg "s3-backup/internal/config/s3"
+	"s3-backup/internal/config"
 )
 
 func init() {
@@ -12,12 +12,12 @@ func init() {
 }
 
 func main() {
-	s3Config, err := s3Cfg.NewS3Config(context.Background())
+	cfg, err := config.NewConfig(context.Background())
 	if err != nil {
 		slog.Error("failed to create S3 config", "error", err)
 		return
 	}
 
-	slog.Info("S3 Config created", "region", s3Config.GetRegion())
+	slog.Info("configuration loaded successfully", "aws_region", cfg.GetAWSRegion(), "s3_bucket", cfg.GetS3Bucket())
 
 }
