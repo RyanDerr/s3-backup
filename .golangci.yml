@@ -1,0 +1,22 @@
+version: "1.63"
+
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+
+linters:
+  enable:
+    - errcheck      # Check for unchecked errors
+    - gosimple      # Simplify code
+    - govet         # Vet examines Go source code
+    - ineffassign   # Detect ineffectual assignments
+    - staticcheck   # Advanced go vet
+    - unused        # Check for unused constants, variables, functions and types
+    - gofmt         # Check formatting
+    - goimports     # Check imports
+    - misspell      # Check for misspelled words
+    - revive        # Fast, configurable, extensible, flexible linter
+    - gocritic      # Provides diagnostics that check for bugs, performance and style issues
+    - gosec         # Security checks
+    - stylecheck    # Stylecheck is a replacement for golint
