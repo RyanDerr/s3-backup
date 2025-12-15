@@ -1,0 +1,35 @@
+# Ignore files that shouldn't be in the Docker build context
+# This speeds up builds and reduces image size
+
+# Git
+.git
+.gitignore
+.github
+
+# Documentation
+*.md
+LICENSE
+examples/
+
+# Tests
+*_test.go
+coverage.out
+testdata/
+
+# Build artifacts
+dist/
+*.exe
+s3-backup
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Misc
+.DS_Store
+*.log
+tmp/
+vendor/

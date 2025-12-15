@@ -1,0 +1,28 @@
+# S3 Backup Configuration Example
+# This file shows all available configuration options
+
+# Directories to backup (required)
+# Can be absolute or relative paths
+backup_dirs:
+  - /Users/username/Documents
+  - /Users/username/Photos
+  - /var/log/myapp
+
+# Recursively backup subdirectories (default: false)
+# - true: backup all files and subdirectories
+# - false: only backup files in the top-level directory
+recursive: true
+
+# Cron schedule for automatic backups (optional)
+# If not set, runs as a one-time backup
+# Format: "minute hour day month weekday"
+# Examples:
+#   "0 0 * * *"      - Every day at midnight
+#   "0 0 */3 * *"    - Every 3 days at midnight
+#   "0 2 * * 0"      - Every Sunday at 2 AM
+#   "*/30 * * * *"   - Every 30 minutes
+# cron_schedule: "0 0 */3 * *"  # Uncomment to enable scheduled backups
+
+# AWS Configuration (required)
+aws_region: us-west-2
+s3_bucket: my-backup-bucket

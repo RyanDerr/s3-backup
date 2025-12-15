@@ -7,6 +7,8 @@
 *.dll
 *.so
 *.dylib
+s3-backup
+dist/
 
 # Test binary, built with `go test -c`
 *.test
@@ -17,8 +19,8 @@ coverage.*
 *.coverprofile
 profile.cov
 
-# Dependency directories (remove the comment below to include it)
-# vendor/
+# Dependency directories
+vendor/
 
 # Go workspace file
 go.work
@@ -30,3 +32,20 @@ go.work.sum
 # Editor/IDE
 # .idea/
 # .vscode/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+*.lock.hcl
+*.tfvars

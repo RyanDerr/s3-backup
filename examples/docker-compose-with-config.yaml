@@ -1,0 +1,23 @@
+# Docker Compose example using a config file instead of environment variables
+
+services:
+  s3-backup:
+    image: ghcr.io/ryanderr/s3-backup:latest
+    container_name: s3-backup
+    restart: unless-stopped
+
+    environment:
+      # Point to the config file
+      - S3_BACKUP_CONFIG_FILE=/config/config.yaml
+
+      # AWS credentials (not stored in config file)
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
+    volumes:
+      # Mount the config file
+      - ./config.yaml:/config/config.yaml:ro
+
+      # Mount directories to backup
+      - /path/to/documents:/data/documents:ro
+      - /path/to/photos:/data/photos:ro

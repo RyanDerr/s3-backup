@@ -1,0 +1,34 @@
+# Docker Compose example for s3-backup
+# This keeps the backup tool running on a schedule
+
+services:
+  s3-backup:
+    image: ghcr.io/ryanderr/s3-backup:latest
+    container_name: s3-backup
+    restart: unless-stopped
+
+    environment:
+      # Backup configuration
+      - BACKUP_DIRS=/data/documents,/data/photos
+      - BACKUP_RECURSIVE=true
+      - BACKUP_CRON_SCHEDULE=0 2 * * * # Daily at 2 AM
+
+      # AWS configuration
+      - AWS_REGION=us-west-2
+      - S3_BUCKET=my-backup-bucket
+
+      # AWS credentials (use environment variables from host)
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+
+    volumes:
+      # Mount directories to backup (read-only recommended)
+      - /path/to/documents:/data/documents:ro
+      - /path/to/photos:/data/photos:ro
+
+    # Optional: Resource limits
+    # deploy:
+    #   resources:
+    #     limits:
+    #       cpus: '1'
+    #       memory: 512M
