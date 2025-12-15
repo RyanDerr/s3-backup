@@ -193,6 +193,36 @@ func TestConfig_IsRecursive(t *testing.T) {
 	}
 }
 
+func TestConfig_GetCronSchedule(t *testing.T) {
+	t.Parallel()
+
+	tc := map[string]struct {
+		cronSchedule string
+		want         string
+	}{
+		"returns configured cron schedule": {
+			cronSchedule: "0 0 * * *",
+			want:         "0 0 * * *",
+		},
+		"returns default when not configured": {
+			cronSchedule: "",
+			want:         DefaultCronSchedule,
+		},
+		"returns custom schedule": {
+			cronSchedule: "*/5 * * * *",
+			want:         "*/5 * * * *",
+		},
+	}
+
+	for name, tc := range tc {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			cfg := &Config{CronSchedule: tc.cronSchedule}
+			assert.Equal(t, tc.want, cfg.GetCronSchedule())
+		})
+	}
+}
+
 func TestConfig_GetAWSConfig(t *testing.T) {
 	t.Parallel()
 

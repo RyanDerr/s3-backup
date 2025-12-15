@@ -14,8 +14,9 @@ import (
 // Config holds all application configuration including backup directories and AWS S3 settings.
 type Config struct {
 	// Backup configuration
-	BackupDirs []string `yaml:"backup_dirs"`
-	Recursive  bool     `yaml:"recursive"`
+	BackupDirs   []string `yaml:"backup_dirs"`
+	Recursive    bool     `yaml:"recursive"`
+	CronSchedule string   `yaml:"cron_schedule"`
 
 	// AWS S3 configuration
 	AWSRegion string `yaml:"aws_region"`
@@ -78,6 +79,17 @@ func (c *Config) IsRecursive() bool {
 	return c.Recursive
 }
 
+// GetCronSchedule returns the configured cron schedule.
+// Returns DefaultCronSchedule if not configured.
+func (c *Config) GetCronSchedule() string {
+	c.RLock()
+	defer c.RUnlock()
+	if c.CronSchedule == "" {
+		return DefaultCronSchedule
+	}
+	return c.CronSchedule
+}
+
 // GetAWSConfig loads and returns the AWS SDK config with the configured region.
 func (c *Config) GetAWSConfig(ctx context.Context) (aws.Config, error) {
 	c.RLock()
@@ -118,7 +130,12 @@ func loadFromEnv(cfg *Config) {
 	if recursive := os.Getenv(EnvRecursive); recursive != "" {
 		cfg.Recursive = strings.ToLower(recursive) == "true"
 	}
-	
+
+	// Load cron schedule
+	if cronSchedule := os.Getenv(EnvCronSchedule); cronSchedule != "" {
+		cfg.CronSchedule = cronSchedule
+	}
+
 	// Load AWS region
 	if region := os.Getenv(EnvAWSRegion); region != "" {
 		cfg.AWSRegion = region
