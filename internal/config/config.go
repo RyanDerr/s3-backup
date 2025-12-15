@@ -91,7 +91,7 @@ func loadFromFile(cfg *Config) error {
 		return nil
 	}
 
-	if err := LoadFromYAML(configFile, cfg); err != nil {
+	if err := loadFromYaml(configFile, cfg); err != nil {
 		return fmt.Errorf("failed to load YAML config: %w", err)
 	}
 

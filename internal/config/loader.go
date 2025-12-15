@@ -7,10 +7,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// LoadFromYAML loads configuration from a YAML file into the provided target struct.
+// loadFromYaml loads configuration from a YAML file into the provided target struct.
 // Returns nil error if file doesn't exist (allows fallback to env vars).
-func LoadFromYAML(filePath string, target any) error {
-	const op = "config.LoadFromYAML"
+func loadFromYaml(filePath string, target any) error {
+	const op = "config.loadFromYaml"
 
 	// If file doesn't exist, return nil to allow env var fallback
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
@@ -29,17 +29,17 @@ func LoadFromYAML(filePath string, target any) error {
 	return nil
 }
 
-// GetEnvOrDefault returns the value of an environment variable or a default value if not set.
-func GetEnvOrDefault(key, defaultValue string) string {
+// getEnvOrDefault returns the value of an environment variable or a default value if not set.
+func getEnvOrDefault(key, defaultValue string) string {
 	if value := os.Getenv(key); value != "" {
 		return value
 	}
 	return defaultValue
 }
 
-// RequireEnv returns the value of a required environment variable or an error if not set.
-func RequireEnv(key string) (string, error) {
-	const op = "config.RequireEnv"
+// requireEnv returns the value of a required environment variable or an error if not set.
+func requireEnv(key string) (string, error) {
+	const op = "config.requireEnv"
 	value, ok := os.LookupEnv(key)
 	if !ok || value == "" {
 		return "", fmt.Errorf("%s: required environment variable %q is not set", op, key)
