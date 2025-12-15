@@ -108,24 +108,30 @@ func (s *Service) isRecursive() bool {
 func (s *Service) Backup(ctx context.Context) error {
 	const op = "s3.Service.Backup"
 
+	// Generate a single timestamp for this entire backup operation
+	backupTimestamp := time.Now()
+	slog.Info("starting backup", "timestamp", backupTimestamp.Format("2006-01-02T15-04-05"))
+
 	files, err := s.collectAllFiles(ctx)
 	if err != nil {
 		return fmt.Errorf("%s: failed to collect files: %w", op, err)
 	}
 
-	if err := s.backupAllFiles(ctx, files); err != nil {
+	if err := s.backupAllFiles(ctx, files, backupTimestamp); err != nil {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
+	slog.Info("backup completed", "timestamp", backupTimestamp.Format("2006-01-02T15-04-05"), "files", len(files))
 	return nil
 }
 
 // backupAllFiles uploads all provided files to the S3 bucket.
 // It continues processing all files even if some fail, collecting all errors.
-func (s *Service) backupAllFiles(ctx context.Context, files []string) error {
+func (s *Service) backupAllFiles(ctx context.Context, files []string, timestamp time.Time) error {
 	const op = "s3.Service.backupAllFiles"
 
 	if len(files) == 0 {
+		slog.Warn("no files to backup")
 		return nil
 	}
 
@@ -138,7 +144,7 @@ func (s *Service) backupAllFiles(ctx context.Context, files []string) error {
 		default:
 		}
 
-		if err := s.backupFile(ctx, file); err != nil {
+		if err := s.backupFile(ctx, file, timestamp); err != nil {
 			joinedErrs = errors.Join(joinedErrs, err)
 		}
 	}
@@ -151,7 +157,7 @@ func (s *Service) backupAllFiles(ctx context.Context, files []string) error {
 
 // backupFile uploads a single file to the configured S3 bucket.
 // The S3 object key is constructed with a timestamp prefix and the file's relative path.
-func (s *Service) backupFile(ctx context.Context, fileName string) error {
+func (s *Service) backupFile(ctx context.Context, fileName string, timestamp time.Time) error {
 	const op = "s3.Service.backupFile"
 
 	if fileName == "" {
@@ -174,7 +180,8 @@ func (s *Service) backupFile(ctx context.Context, fileName string) error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	key := buildObjectKey(s3Key, time.Now())
+	// Use the provided timestamp for all files in this backup operation
+	key := buildObjectKey(s3Key, timestamp)
 
 	_, err = s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: &s.bucketName,

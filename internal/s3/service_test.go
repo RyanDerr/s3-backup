@@ -240,7 +240,8 @@ func TestService_BackupAllFiles(t *testing.T) {
 			t.Parallel()
 			svc := &Service{bucketName: "test-bucket"}
 
-			err := svc.backupAllFiles(ctx, tc.files)
+			timestamp := time.Now()
+			err := svc.backupAllFiles(ctx, tc.files, timestamp)
 
 			if tc.wantErr {
 				require.Error(t, err)
@@ -260,7 +261,8 @@ func TestService_BackupAllFiles_ContextCancellation(t *testing.T) {
 	svc := &Service{bucketName: "test-bucket"}
 	files := []string{"file1.txt", "file2.txt"}
 
-	err := svc.backupAllFiles(ctx, files)
+	timestamp := time.Now()
+	err := svc.backupAllFiles(ctx, files, timestamp)
 
 	require.Error(t, err)
 	assert.ErrorIs(t, err, context.Canceled)
@@ -331,7 +333,8 @@ func TestService_BackupFile(t *testing.T) {
 			t.Parallel()
 
 			svc, fileName := tc.setup(t)
-			err := svc.backupFile(ctx, fileName)
+			timestamp := time.Now()
+			err := svc.backupFile(ctx, fileName, timestamp)
 
 			if tc.wantErr != nil {
 				require.Error(t, err)
@@ -421,7 +424,8 @@ func TestService_BackupAllFiles_WithErrors(t *testing.T) {
 			t.Parallel()
 
 			svc, files := tc.setup(t)
-			err := svc.backupAllFiles(ctx, files)
+			timestamp := time.Now()
+			err := svc.backupAllFiles(ctx, files, timestamp)
 
 			if tc.wantErr {
 				require.Error(t, err)
