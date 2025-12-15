@@ -3,6 +3,7 @@ package s3
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 // getFilesInDirectory retrieves the list of files in the specified directory.
@@ -17,7 +18,7 @@ func getFilesInDirectory(dir string) ([]string, error) {
 	var files []string
 	for _, di := range dis {
 		if !di.IsDir() {
-			files = append(files, di.Name())
+			files = append(files, filepath.Join(filepath.Base(dir), di.Name()))
 		}
 	}
 

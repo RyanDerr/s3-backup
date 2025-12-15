@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"s3-backup/internal/config"
 	"sync"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
@@ -50,7 +51,9 @@ func (s *S3Service) Backup(ctx context.Context) error {
 		return err
 	}
 
-	return s.backupAllFiles(ctx, files)
+	ts := time.Now()
+
+	return s.backupAllFiles(ctx, files, ts)
 }
 
 // collectAllFiles aggregates all files from the configured backup directories.
@@ -74,12 +77,12 @@ func (s *S3Service) collectAllFiles() ([]string, error) {
 
 // backupAllFiles uploads all provided files to the S3 bucket.
 // Returns any errors encountered during the backup process.
-func (s *S3Service) backupAllFiles(ctx context.Context, files []string) error {
+func (s *S3Service) backupAllFiles(ctx context.Context, files []string, ts time.Time) error {
 	const op = "s3.S3Service.backupAllFiles"
 	var joinedErrs error
 
 	for _, file := range files {
-		if err := s.backupFile(ctx, file); err != nil {
+		if err := s.backupFile(ctx, file, ts); err != nil {
 			joinedErrs = errors.Join(joinedErrs, fmt.Errorf("%s: failed to backup file %s: %w", op, file, err))
 		}
 	}
@@ -88,7 +91,7 @@ func (s *S3Service) backupAllFiles(ctx context.Context, files []string) error {
 }
 
 // backupFile uploads a single file to the configured S3 bucket.
-func (s *S3Service) backupFile(ctx context.Context, fileName string) error {
+func (s *S3Service) backupFile(ctx context.Context, fileName string, ts time.Time) error {
 	const op = "s3.S3Service.backupFile"
 
 	content, err := readFileContent(fileName)
@@ -96,9 +99,11 @@ func (s *S3Service) backupFile(ctx context.Context, fileName string) error {
 		return fmt.Errorf("%s: failed to read file content: %w", op, err)
 	}
 
+	prefix := fmt.Sprintf("%s/%s", ts.Format("2006-01-02T15-04-05"), fileName)
+
 	_, err = s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: &s.bucketName,
-		Key:    &fileName,
+		Key:    &prefix,
 		Body:   bytes.NewBuffer(content),
 	})
 
