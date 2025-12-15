@@ -15,6 +15,7 @@ import (
 type Config struct {
 	// Backup configuration
 	BackupDirs []string `yaml:"backup_dirs"`
+	Recursive  bool     `yaml:"recursive"`
 
 	// AWS S3 configuration
 	AWSRegion string `yaml:"aws_region"`
@@ -70,6 +71,13 @@ func (c *Config) GetS3Bucket() string {
 	return c.S3Bucket
 }
 
+// IsRecursive returns whether we should perform recursive backup of nested directories and files.
+func (c *Config) IsRecursive() bool {
+	c.RLock()
+	defer c.RUnlock()
+	return c.Recursive
+}
+
 // GetAWSConfig loads and returns the AWS SDK config with the configured region.
 func (c *Config) GetAWSConfig(ctx context.Context) (aws.Config, error) {
 	c.RLock()
@@ -106,6 +114,11 @@ func loadFromEnv(cfg *Config) {
 		cfg.BackupDirs = parseCommaSeparated(envDirs)
 	}
 
+	// Load recursive flag
+	if recursive := os.Getenv(EnvRecursive); recursive != "" {
+		cfg.Recursive = strings.ToLower(recursive) == "true"
+	}
+	
 	// Load AWS region
 	if region := os.Getenv(EnvAWSRegion); region != "" {
 		cfg.AWSRegion = region

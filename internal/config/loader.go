@@ -28,21 +28,3 @@ func loadFromYaml(filePath string, target any) error {
 
 	return nil
 }
-
-// getEnvOrDefault returns the value of an environment variable or a default value if not set.
-func getEnvOrDefault(key, defaultValue string) string {
-	if value := os.Getenv(key); value != "" {
-		return value
-	}
-	return defaultValue
-}
-
-// requireEnv returns the value of a required environment variable or an error if not set.
-func requireEnv(key string) (string, error) {
-	const op = "config.requireEnv"
-	value, ok := os.LookupEnv(key)
-	if !ok || value == "" {
-		return "", fmt.Errorf("%s: required environment variable %q is not set", op, key)
-	}
-	return value, nil
-}

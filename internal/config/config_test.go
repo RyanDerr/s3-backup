@@ -17,24 +17,53 @@ func TestNewConfig(t *testing.T) {
 	ctx := context.Background()
 
 	tc := map[string]struct {
-		setup   func(t *testing.T)
-		wantErr bool
+		setup         func(t *testing.T)
+		wantErr       bool
+		wantRecursive bool
 	}{
 		"from environment variables": {
 			setup: func(t *testing.T) {
 				setupConfigFromEnv(t, 2)
 			},
 		},
+		"from environment variables with recursive enabled": {
+			setup: func(t *testing.T) {
+				setupConfigFromEnv(t, 2)
+				setupEnv(t, EnvRecursive, "true")
+			},
+			wantRecursive: true,
+		},
+		"from environment variables with recursive disabled": {
+			setup: func(t *testing.T) {
+				setupConfigFromEnv(t, 2)
+				setupEnv(t, EnvRecursive, "false")
+			},
+			wantRecursive: false,
+		},
 		"from YAML file": {
 			setup: func(t *testing.T) {
-				setupConfigFromYAML(t, 2)
+				setupConfigFromYAML(t, 2, false)
 			},
+		},
+		"from YAML file with recursive enabled": {
+			setup: func(t *testing.T) {
+				setupConfigFromYAML(t, 2, true)
+			},
+			wantRecursive: true,
 		},
 		"env vars override YAML": {
 			setup: func(t *testing.T) {
-				setupConfigFromYAML(t, 1)
+				setupConfigFromYAML(t, 1, false)
 				setupConfigFromEnv(t, 2) // Override
 			},
+		},
+		"env recursive overrides YAML recursive": {
+			setup: func(t *testing.T) {
+				setupConfigFromYAML(t, 1, true) // YAML has recursive=true
+				setupConfigFromEnv(t, 1)
+				setupEnv(t, EnvRecursive, "false") // Override with env var
+			},
+			wantRecursive: false,
 		},
 		"missing backup dirs": {
 			setup: func(t *testing.T) {
@@ -93,6 +122,7 @@ func TestNewConfig(t *testing.T) {
 			assert.NotEmpty(t, got.BackupDirs)
 			assert.NotEmpty(t, got.AWSRegion)
 			assert.NotEmpty(t, got.S3Bucket)
+			assert.Equal(t, tc.wantRecursive, got.Recursive)
 		})
 	}
 }
@@ -135,6 +165,32 @@ func TestConfig_GetS3Bucket(t *testing.T) {
 
 	cfg := &Config{S3Bucket: "my-bucket"}
 	assert.Equal(t, "my-bucket", cfg.GetS3Bucket())
+}
+
+func TestConfig_IsRecursive(t *testing.T) {
+	t.Parallel()
+
+	tc := map[string]struct {
+		recursive bool
+		want      bool
+	}{
+		"returns true when recursive is enabled": {
+			recursive: true,
+			want:      true,
+		},
+		"returns false when recursive is disabled": {
+			recursive: false,
+			want:      false,
+		},
+	}
+
+	for name, tc := range tc {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			cfg := &Config{Recursive: tc.recursive}
+			assert.Equal(t, tc.want, cfg.IsRecursive())
+		})
+	}
 }
 
 func TestConfig_GetAWSConfig(t *testing.T) {
@@ -188,8 +244,8 @@ func setupConfigFromEnv(t *testing.T, dirCount int) {
 }
 
 // setupConfigFromYAML creates a YAML configuration file and sets the config file path.
-// Creates dirCount temporary directories and writes a complete YAML config with backup dirs, AWS region, and S3 bucket.
-func setupConfigFromYAML(t *testing.T, dirCount int) {
+// Creates dirCount temporary directories and writes a complete YAML config with backup dirs, AWS region, S3 bucket, and recursive flag.
+func setupConfigFromYAML(t *testing.T, dirCount int, recursive bool) {
 	t.Helper()
 	dirs := createTempDirs(t, dirCount)
 
@@ -200,6 +256,7 @@ func setupConfigFromYAML(t *testing.T, dirCount int) {
 	}
 	yamlContent.WriteString("aws_region: eu-west-1\n")
 	yamlContent.WriteString("s3_bucket: yaml-bucket\n")
+	yamlContent.WriteString(fmt.Sprintf("recursive: %v\n", recursive))
 
 	tmpFile := filepath.Join(t.TempDir(), "config.yaml")
 	err := os.WriteFile(tmpFile, []byte(yamlContent.String()), 0644)

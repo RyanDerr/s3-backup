@@ -6,6 +6,7 @@ const (
 
 	// Backup configuration
 	EnvBackupDirs = "BACKUP_DIRS"
+	EnvRecursive  = "BACKUP_RECURSIVE"
 
 	// AWS S3 configuration
 	EnvAWSRegion = "AWS_REGION"
