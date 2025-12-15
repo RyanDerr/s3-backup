@@ -7,13 +7,13 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"sync"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsConfig "github.com/aws/aws-sdk-go-v2/config"
 )
 
 // Config holds all application configuration including backup directories and AWS S3 settings.
+// All fields are immutable after NewConfig() returns.
 type Config struct {
 	// Backup configuration
 	BackupDirs   []string `yaml:"backup_dirs"`
@@ -23,8 +23,6 @@ type Config struct {
 	// AWS S3 configuration
 	AWSRegion string `yaml:"aws_region"`
 	S3Bucket  string `yaml:"s3_bucket"`
-
-	sync.RWMutex
 }
 
 // NewConfig creates a new Config by loading from YAML file or environment variables.
@@ -52,9 +50,6 @@ func NewConfig() (*Config, error) {
 
 // GetBackupDirs returns a copy of the configured backup directories.
 func (c *Config) GetBackupDirs() []string {
-	c.RLock()
-	defer c.RUnlock()
-
 	dirs := make([]string, len(c.BackupDirs))
 	copy(dirs, c.BackupDirs)
 	return dirs
@@ -62,30 +57,22 @@ func (c *Config) GetBackupDirs() []string {
 
 // GetAWSRegion returns the configured AWS region.
 func (c *Config) GetAWSRegion() string {
-	c.RLock()
-	defer c.RUnlock()
 	return c.AWSRegion
 }
 
 // GetS3Bucket returns the configured S3 bucket name.
 func (c *Config) GetS3Bucket() string {
-	c.RLock()
-	defer c.RUnlock()
 	return c.S3Bucket
 }
 
 // IsRecursive returns whether we should perform recursive backup of nested directories and files.
 func (c *Config) IsRecursive() bool {
-	c.RLock()
-	defer c.RUnlock()
 	return c.Recursive
 }
 
 // GetCronSchedule returns the configured cron schedule.
 // Returns DefaultCronSchedule if not configured.
 func (c *Config) GetCronSchedule() string {
-	c.RLock()
-	defer c.RUnlock()
 	if c.CronSchedule == "" {
 		return DefaultCronSchedule
 	}
@@ -94,8 +81,6 @@ func (c *Config) GetCronSchedule() string {
 
 // GetAWSConfig loads and returns the AWS SDK config with the configured region.
 func (c *Config) GetAWSConfig(ctx context.Context) (aws.Config, error) {
-	c.RLock()
-	defer c.RUnlock()
 	region := c.AWSRegion
 
 	cfg, err := awsConfig.LoadDefaultConfig(ctx, awsConfig.WithRegion(region))

@@ -20,6 +20,8 @@ type API interface {
 }
 
 // Service wraps the AWS S3 client and provides backup functionality.
+// The client, bucketName, backupDirs, recursive, and cronSchedule fields
+// are immutable after NewS3Service returns.
 type Service struct {
 	client       API
 	bucketName   string
@@ -27,8 +29,8 @@ type Service struct {
 	recursive    bool
 	cronSchedule string
 
-	stopCh chan struct{}
-	mu     sync.RWMutex
+	stopCh   chan struct{}
+	stopOnce sync.Once
 }
 
 // NewS3Service creates a new Service with the provided Config and optional client options.
@@ -88,8 +90,6 @@ func validateDirectories(dirs []string) error {
 // getBackupDirs returns a copy of the configured backup directories.
 // This method is safe to call concurrently.
 func (s *Service) getBackupDirs() []string {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
 	dirs := make([]string, len(s.backupDirs))
 	copy(dirs, s.backupDirs)
 	return dirs
@@ -98,8 +98,6 @@ func (s *Service) getBackupDirs() []string {
 // isRecursive returns whether recursive backup is enabled.
 // This method is safe to call concurrently.
 func (s *Service) isRecursive() bool {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
 	return s.recursive
 }
 
@@ -163,7 +161,11 @@ func (s *Service) backupFile(ctx context.Context, fileName string) error {
 	if err != nil {
 		return fmt.Errorf("%s: failed to open file %s: %w", op, fileName, err)
 	}
-	defer func() { _ = file.Close() }()
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil {
+			slog.Warn("failed to close file", "file", fileName, "error", closeErr)
+		}
+	}()
 
 	key := buildObjectKey(fileName, time.Now())
 
@@ -182,18 +184,22 @@ func (s *Service) backupFile(ctx context.Context, fileName string) error {
 
 // Start begins the scheduled backup process in the background.
 // It runs backups according to the configured cron schedule.
-// Use Stop() to gracefully shut down the scheduler.
+// The scheduler will stop when the context is cancelled or Stop() is called.
 func (s *Service) Start(ctx context.Context) error {
 	const op = "s3.Service.Start"
 
-	s.mu.Lock()
 	schedule := s.cronSchedule
-	s.mu.Unlock()
 
 	c := cron.New()
 	_, err := c.AddFunc(schedule, func() {
+		// Create a new context for each backup job that respects the parent context
+		backupCtx := ctx
+		if ctx.Err() != nil {
+			slog.Warn("skipping scheduled backup: context cancelled")
+			return
+		}
 		slog.Info("starting scheduled backup", "time", time.Now().Format(time.RFC3339))
-		if err := s.Backup(ctx); err != nil {
+		if err := s.Backup(backupCtx); err != nil {
 			slog.Error("scheduled backup failed", "error", err)
 		} else {
 			slog.Info("scheduled backup completed successfully", "time", time.Now().Format(time.RFC3339))
@@ -208,8 +214,13 @@ func (s *Service) Start(ctx context.Context) error {
 
 	slog.Info("backup scheduler started", "schedule", schedule)
 
-	// Block until stop signal
-	<-s.stopCh
+	// Block until stop signal or context cancellation
+	select {
+	case <-s.stopCh:
+		slog.Info("received stop signal")
+	case <-ctx.Done():
+		slog.Info("context cancelled, stopping scheduler")
+	}
 
 	// Graceful shutdown
 	shutdownCtx := c.Stop()
@@ -220,6 +231,9 @@ func (s *Service) Start(ctx context.Context) error {
 }
 
 // Stop gracefully stops the scheduled backup process.
+// It is safe to call multiple times.
 func (s *Service) Stop() {
-	close(s.stopCh)
+	s.stopOnce.Do(func() {
+		close(s.stopCh)
+	})
 }

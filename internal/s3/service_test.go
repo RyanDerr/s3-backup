@@ -67,7 +67,7 @@ func TestNewS3Service(t *testing.T) {
 				cfg := createTestConfig(t, 1, false)
 				// Create a file instead of directory
 				filePath := filepath.Join(t.TempDir(), "file.txt")
-					require.NoError(t, os.WriteFile(filePath, []byte("test"), 0600))
+				require.NoError(t, os.WriteFile(filePath, []byte("test"), 0600))
 				cfg.BackupDirs = append(cfg.BackupDirs, filePath)
 				return cfg
 			},

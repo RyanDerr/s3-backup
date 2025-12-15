@@ -5,8 +5,10 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"os/signal"
 	"s3-backup/internal/config"
 	"s3-backup/internal/s3"
+	"syscall"
 )
 
 func init() {
@@ -14,12 +16,27 @@ func init() {
 }
 
 func main() {
-	ctx := context.Background()
+	os.Exit(run())
+}
+
+func run() int {
+	// Create context that cancels on interrupt signals
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	// Setup signal handling for graceful shutdown
+	sigCh := make(chan os.Signal, 1)
+	signal.Notify(sigCh, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		sig := <-sigCh
+		slog.Info("received shutdown signal", "signal", sig)
+		cancel()
+	}()
 
 	cfg, err := config.NewConfig()
 	if err != nil {
 		slog.Error("failed to create S3 config", "error", err)
-		os.Exit(1)
+		return 1
 	}
 
 	slog.Info("configuration loaded successfully",
@@ -30,7 +47,7 @@ func main() {
 	s3Service, err := s3.NewS3Service(ctx, cfg)
 	if err != nil {
 		slog.Error("failed to create S3 service", "error", err)
-		os.Exit(1)
+		return 1
 	}
 
 	// Check if cron schedule is configured
@@ -38,15 +55,17 @@ func main() {
 		slog.Info("starting backup scheduler", "schedule", cfg.GetCronSchedule())
 		if err := s3Service.Start(ctx); err != nil {
 			slog.Error("scheduler failed", "error", err)
-			os.Exit(1)
+			return 1
 		}
-		return
+		slog.Info("scheduler stopped gracefully")
+		return 0
 	}
 	// One-time backup
 	slog.Info("running one-time backup")
 	if err := s3Service.Backup(ctx); err != nil {
 		slog.Error("backup failed", "error", err)
-		os.Exit(1)
+		return 1
 	}
 	slog.Info("backup completed successfully")
+	return 0
 }
