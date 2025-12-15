@@ -3,7 +3,7 @@
 A simple tool to backup your local directories to AWS S3.
 
 [![Go Version](https://img.shields.io/badge/go-1.25.5-blue)](go.mod)
-[![License](https://img.shields.io/github/license/RyanDerr/s3-backup)](LICENSE)
+[![License](https://img.shields.io/github/license/RyanDerr/s3-backup)](https://github.com/RyanDerr/s3-backup/blob/main/LICENSE)
 [![Release](https://img.shields.io/github/v/release/RyanDerr/s3-backup)](https://github.com/RyanDerr/s3-backup/releases)
 
 ## What does this do?
