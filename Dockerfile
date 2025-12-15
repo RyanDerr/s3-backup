@@ -1,6 +1,11 @@
 # Multi-stage build for minimal image size
 # Stage 1: Build the Go binary
-FROM golang:1.25.5-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.25.5-alpine AS builder
+
+# Build arguments for cross-compilation
+ARG TARGETOS
+ARG TARGETARCH
+ARG TARGETPLATFORM
 
 # Install build dependencies
 RUN apk add --no-cache git ca-certificates tzdata
@@ -19,20 +24,21 @@ ARG VERSION=dev
 ARG CGO_ENABLED=0
 
 # Build the binary with optimizations
-RUN go build \
+RUN CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
     -ldflags="-s -w -X main.Version=${VERSION}" \
     -trimpath \
     -o s3-backup \
     .
 
-# Verify the binary works
-RUN ./s3-backup --help || echo "Binary built successfully"
+# Verify the binary works (skip for cross-compilation)
+RUN if [ "$BUILDPLATFORM" = "$TARGETPLATFORM" ]; then ./s3-backup --help || echo "Binary built successfully"; fi
 
 # Stage 2: Create minimal runtime image
 FROM alpine:3.23
 
-# Install ca-certificates for HTTPS and tzdata for timezone support
-RUN apk add --no-cache ca-certificates tzdata
+# Copy ca-certificates and tzdata from builder (avoids QEMU emulation issues)
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=builder /usr/share/zoneinfo /usr/share/zoneinfo
 
 # Create non-root user
 RUN addgroup -g 1000 -S s3backup && \
