@@ -100,14 +100,9 @@ func (fc *fileCollector) walk(path string, d fs.DirEntry, err error) error {
 		return nil
 	}
 
-	// Calculate relative path from the base directory
-	relPath, err := filepath.Rel(fc.dir, path)
-	if err != nil {
-		return fmt.Errorf("%s: failed to get relative path for %s: %w", op, path, err)
-	}
-
-	// Prefix with base directory name and add to collection
-	fc.files = append(fc.files, filepath.Join(fc.baseDir, relPath))
+	// Store the full path for file operations
+	// The S3 key will be constructed later using the base directory and relative path
+	fc.files = append(fc.files, path)
 	return nil
 }
 

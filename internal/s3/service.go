@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"path/filepath"
 	"s3-backup/internal/config"
+	"strings"
 	"sync"
 	"time"
 
@@ -167,7 +169,12 @@ func (s *Service) backupFile(ctx context.Context, fileName string) error {
 		}
 	}()
 
-	key := buildObjectKey(fileName, time.Now())
+	s3Key, err := s.buildS3Key(fileName)
+	if err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	key := buildObjectKey(s3Key, time.Now())
 
 	_, err = s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket: &s.bucketName,
@@ -180,6 +187,29 @@ func (s *Service) backupFile(ctx context.Context, fileName string) error {
 	}
 
 	return nil
+}
+
+// buildS3Key constructs an S3 key from the full file path by finding the backup directory
+// it belongs to and creating a relative path with the base directory name as prefix.
+// For example: /data/documents/invoices/invoice-001.txt -> documents/invoices/invoice-001.txt
+func (s *Service) buildS3Key(filePath string) (string, error) {
+	const op = "s3.Service.buildS3Key"
+
+	// Find which backup directory this file belongs to
+	for _, dir := range s.backupDirs {
+		// Check if the file path starts with this backup directory
+		relPath, err := filepath.Rel(dir, filePath)
+		if err != nil || strings.HasPrefix(relPath, "..") {
+			// File is not under this directory, try next one
+			continue
+		}
+
+		// Found the matching directory - construct S3 key with base directory name
+		baseDir := filepath.Base(dir)
+		return filepath.Join(baseDir, relPath), nil
+	}
+
+	return "", fmt.Errorf("%s: file %s does not belong to any configured backup directory", op, filePath)
 }
 
 // Start begins the scheduled backup process in the background.

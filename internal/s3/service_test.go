@@ -304,6 +304,7 @@ func TestService_BackupFile(t *testing.T) {
 				svc := &Service{
 					client:     &mockS3Client{},
 					bucketName: "test-bucket",
+					backupDirs: []string{dir},
 				}
 				return svc, filePath
 			},
@@ -317,6 +318,7 @@ func TestService_BackupFile(t *testing.T) {
 				svc := &Service{
 					client:     &mockS3Client{shouldFail: true},
 					bucketName: "test-bucket",
+					backupDirs: []string{dir},
 				}
 				return svc, filePath
 			},
@@ -363,6 +365,7 @@ func TestService_BackupAllFiles_WithErrors(t *testing.T) {
 				svc := &Service{
 					client:     &mockS3Client{},
 					bucketName: "test-bucket",
+					backupDirs: []string{dir},
 				}
 				return svc, []string{file1, file2}
 			},
@@ -377,6 +380,7 @@ func TestService_BackupAllFiles_WithErrors(t *testing.T) {
 				svc := &Service{
 					client:     &mockS3Client{},
 					bucketName: "test-bucket",
+					backupDirs: []string{dir},
 				}
 				// Mix valid and nonexistent files
 				return svc, []string{file1, "/nonexistent/file.txt", ""}
@@ -399,6 +403,7 @@ func TestService_BackupAllFiles_WithErrors(t *testing.T) {
 				svc := &Service{
 					client:     &mockS3Client{shouldFail: true},
 					bucketName: "test-bucket",
+					backupDirs: []string{dir},
 				}
 				return svc, []string{file1, file2}
 			},
@@ -427,6 +432,90 @@ func TestService_BackupAllFiles_WithErrors(t *testing.T) {
 			}
 
 			require.NoError(t, err)
+		})
+	}
+}
+
+func TestService_BuildS3Key(t *testing.T) {
+	t.Parallel()
+
+	tc := map[string]struct {
+		setup      func(t *testing.T) (svc *Service, filePath, expectedKey string)
+		wantErr    bool
+		errContain string
+	}{
+		"file in single backup directory": {
+			setup: func(t *testing.T) (*Service, string, string) {
+				dir := t.TempDir()
+				filePath := filepath.Join(dir, "test.txt")
+				svc := &Service{
+					backupDirs: []string{dir},
+				}
+				expectedKey := filepath.Join(filepath.Base(dir), "test.txt")
+				return svc, filePath, expectedKey
+			},
+		},
+		"file in subdirectory": {
+			setup: func(t *testing.T) (*Service, string, string) {
+				dir := t.TempDir()
+				filePath := filepath.Join(dir, "subdir", "nested", "file.txt")
+				svc := &Service{
+					backupDirs: []string{dir},
+				}
+				expectedKey := filepath.Join(filepath.Base(dir), "subdir", "nested", "file.txt")
+				return svc, filePath, expectedKey
+			},
+		},
+		"file in second backup directory": {
+			setup: func(t *testing.T) (*Service, string, string) {
+				dir1 := t.TempDir()
+				dir2 := t.TempDir()
+				filePath := filepath.Join(dir2, "docs", "report.pdf")
+				svc := &Service{
+					backupDirs: []string{dir1, dir2},
+				}
+				expectedKey := filepath.Join(filepath.Base(dir2), "docs", "report.pdf")
+				return svc, filePath, expectedKey
+			},
+		},
+		"file not in any backup directory": {
+			setup: func(t *testing.T) (*Service, string, string) {
+				dir := t.TempDir()
+				svc := &Service{
+					backupDirs: []string{dir},
+				}
+				return svc, "/completely/different/path/file.txt", ""
+			},
+			wantErr:    true,
+			errContain: "does not belong to any configured backup directory",
+		},
+		"empty backup directories": {
+			setup: func(_ *testing.T) (*Service, string, string) {
+				svc := &Service{
+					backupDirs: []string{},
+				}
+				return svc, "/some/file.txt", ""
+			},
+			wantErr:    true,
+			errContain: "does not belong to any configured backup directory",
+		},
+	}
+
+	for name, tc := range tc {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			svc, filePath, expectedKey := tc.setup(t)
+			key, err := svc.buildS3Key(filePath)
+
+			if tc.wantErr {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tc.errContain)
+				return
+			}
+
+			require.NoError(t, err)
+			assert.Equal(t, expectedKey, key)
 		})
 	}
 }
