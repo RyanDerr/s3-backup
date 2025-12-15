@@ -21,7 +21,6 @@ Before creating a release:
 2. **Update documentation** if needed
 
    - Update README.md with new features
-   - Update CHANGELOG.md (if maintained)
    - Update examples if API changed
 
 3. **Commit all changes** to your feature branch

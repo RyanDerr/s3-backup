@@ -13,14 +13,15 @@ backup_dirs:
 # - false: only backup files in the top-level directory
 recursive: true
 
-# Cron schedule for automatic backups (default: "0 0 */3 * *" - every 3 days at midnight)
+# Cron schedule for automatic backups (optional)
+# If not set, runs as a one-time backup
 # Format: "minute hour day month weekday"
 # Examples:
 #   "0 0 * * *"      - Every day at midnight
 #   "0 0 */3 * *"    - Every 3 days at midnight
 #   "0 2 * * 0"      - Every Sunday at 2 AM
 #   "*/30 * * * *"   - Every 30 minutes
-cron_schedule: "0 0 */3 * *"
+# cron_schedule: "0 0 */3 * *"  # Uncomment to enable scheduled backups
 
 # AWS Configuration (required)
 aws_region: us-west-2

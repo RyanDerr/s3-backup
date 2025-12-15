@@ -203,9 +203,9 @@ func TestConfig_GetCronSchedule(t *testing.T) {
 			cronSchedule: "0 0 * * *",
 			want:         "0 0 * * *",
 		},
-		"returns default when not configured": {
+		"returns empty string when not configured": {
 			cronSchedule: "",
-			want:         DefaultCronSchedule,
+			want:         "",
 		},
 		"returns custom schedule": {
 			cronSchedule: "*/5 * * * *",

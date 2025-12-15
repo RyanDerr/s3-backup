@@ -71,11 +71,8 @@ func (c *Config) IsRecursive() bool {
 }
 
 // GetCronSchedule returns the configured cron schedule.
-// Returns DefaultCronSchedule if not configured.
+// Returns empty string if not configured (one-time backup mode).
 func (c *Config) GetCronSchedule() string {
-	if c.CronSchedule == "" {
-		return DefaultCronSchedule
-	}
 	return c.CronSchedule
 }
 

@@ -119,13 +119,13 @@ services:
 
 ### Environment variables
 
-| Variable               | Required? | Default       | What it does                                                |
-| ---------------------- | --------- | ------------- | ----------------------------------------------------------- |
-| `BACKUP_DIRS`          | Yes       | -             | Which directories to backup (separate multiple with commas) |
-| `AWS_REGION`           | Yes       | -             | Your AWS region like `us-west-2`                            |
-| `S3_BUCKET`            | Yes       | -             | Name of your S3 bucket                                      |
-| `BACKUP_RECURSIVE`     | No        | `false`       | Set to `true` to include subdirectories                     |
-| `BACKUP_CRON_SCHEDULE` | No        | `0 0 */3 * *` | When to run (default: every 3 days at midnight)             |
+| Variable               | Required? | Default | What it does                                                |
+| ---------------------- | --------- | ------- | ----------------------------------------------------------- |
+| `BACKUP_DIRS`          | Yes       | -       | Which directories to backup (separate multiple with commas) |
+| `AWS_REGION`           | Yes       | -       | Your AWS region like `us-west-2`                            |
+| `S3_BUCKET`            | Yes       | -       | Name of your S3 bucket                                      |
+| `BACKUP_RECURSIVE`     | No        | `false` | Set to `true` to include subdirectories                     |
+| `BACKUP_CRON_SCHEDULE` | No        | (none)  | When to run backups (if not set, runs once and exits)       |
 
 ### Using a config file
 
@@ -136,7 +136,7 @@ backup_dirs:
   - /home/user/documents
   - /home/user/photos
 recursive: true
-cron_schedule: "0 2 * * *"
+cron_schedule: "0 2 * * *" # Optional - omit to run once
 aws_region: us-west-2
 s3_bucket: my-backup-bucket
 ```

@@ -15,7 +15,4 @@ const (
 	EnvAWSRegion = "AWS_REGION"
 	// EnvS3Bucket is the environment variable for S3 bucket name.
 	EnvS3Bucket = "S3_BUCKET"
-
-	// DefaultCronSchedule is the default backup schedule (every 3 days)
-	DefaultCronSchedule = "0 0 */3 * *"
 )

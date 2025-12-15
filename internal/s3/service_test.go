@@ -95,7 +95,6 @@ func TestNewS3Service(t *testing.T) {
 			assert.NotNil(t, svc.client)
 			assert.NotEmpty(t, svc.bucketName)
 			assert.NotEmpty(t, svc.backupDirs)
-			assert.NotEmpty(t, svc.cronSchedule)
 			assert.NotNil(t, svc.stopCh)
 		})
 	}
@@ -465,9 +464,13 @@ func TestService_Start(t *testing.T) {
 			cronSchedule: "*/5 * * * *",
 			wantErr:      false,
 		},
-		"default cron schedule": {
-			cronSchedule: config.DefaultCronSchedule,
+		"standard daily schedule": {
+			cronSchedule: "0 0 * * *",
 			wantErr:      false,
+		},
+		"empty cron schedule": {
+			cronSchedule: "",
+			wantErr:      true,
 		},
 		"invalid cron schedule": {
 			cronSchedule: "invalid schedule",

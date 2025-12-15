@@ -313,7 +313,7 @@ s3://weekly-backups/
 **Common Cron Schedules:**
 
 - `"0 0 * * *"` - Daily at midnight
-- `"0 0 */3 * *"` - Every 3 days at midnight (default)
+- `"0 0 */3 * *"` - Every 3 days at midnight
 - `"0 2 * * 0"` - Weekly on Sunday at 2 AM
 - `"0 3 1 * *"` - Monthly on the 1st at 3 AM
 - `"*/30 * * * *"` - Every 30 minutes
@@ -324,14 +324,14 @@ s3://weekly-backups/
 
 ### One-time Backup (No Cron)
 
-If you don't set a cron schedule and use the tool for a one-time backup:
+Omit the `cron_schedule` / `BACKUP_CRON_SCHEDULE` for a one-time backup:
 
 ```bash
-# Using config file
+# Using config file (comment out cron_schedule in config.yaml)
 export S3_BACKUP_CONFIG_FILE=config.yaml
 ./s3-backup
 
-# Using environment variables
+# Using environment variables (don't set BACKUP_CRON_SCHEDULE)
 export BACKUP_DIRS=/path/to/backup
 export AWS_REGION=us-west-2
 export S3_BUCKET=my-bucket
