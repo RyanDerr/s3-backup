@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   test:
-    name: Run Tests
+    name: Unit Tests
     runs-on: ubuntu-slim
     
     steps:
@@ -35,22 +35,8 @@ jobs:
       - name: Run tests
         run: go test -v -race -coverprofile=coverage.out ./...
 
-      - name: Run fuzz tests
-        run: |
-          # Run each fuzz test for 10 seconds
-          go test -fuzz=FuzzLoadFromFile -fuzztime=10s ./internal/config || true
-          go test -fuzz=FuzzLoadFromEnv -fuzztime=10s ./internal/config || true
-          go test -fuzz=FuzzValidateAWSRegion -fuzztime=10s ./internal/config || true
-          go test -fuzz=FuzzValidateS3Bucket -fuzztime=10s ./internal/config || true
-          go test -fuzz=FuzzBuildObjectKey -fuzztime=10s ./internal/s3 || true
-          go test -fuzz=FuzzFileCollectorWalk -fuzztime=10s ./internal/s3 || true
-          go test -fuzz=FuzzValidateDirectories -fuzztime=10s ./internal/s3 || true
-
       - name: Check test coverage
-        run: |
-          go tool cover -func=coverage.out
-          # Optionally fail if coverage is below threshold
-          # go test -cover -coverprofile=coverage.out ./... | grep "total:" | awk '{if ($3+0 < 80.0) {print "Coverage below 80%"; exit 1}}'
+        run: go tool cover -func=coverage.out
 
       - name: Upload coverage to artifacts
         uses: actions/upload-artifact@v4
@@ -58,6 +44,42 @@ jobs:
           name: coverage-report
           path: coverage.out
           retention-days: 30
+
+  fuzz:
+    name: Fuzz - ${{ matrix.test }}
+    runs-on: ubuntu-slim
+    needs: test
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: ./internal/config
+            test: FuzzLoadFromFile
+          - package: ./internal/config
+            test: FuzzLoadFromEnv
+          - package: ./internal/config
+            test: FuzzValidateAWSRegion
+          - package: ./internal/config
+            test: FuzzValidateS3Bucket
+          - package: ./internal/s3
+            test: FuzzBuildObjectKey
+          - package: ./internal/s3
+            test: FuzzFileCollectorWalk
+          - package: ./internal/s3
+            test: FuzzValidateDirectories
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+          cache: true
+
+      - name: Run fuzz test
+        run: go test -fuzz=${{ matrix.test }} -fuzztime=10s ${{ matrix.package }} || true
 
   lint:
     name: Lint
