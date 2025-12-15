@@ -1,3 +1,4 @@
+// Package s3 provides S3 backup functionality including file collection and upload.
 package s3
 
 import "errors"

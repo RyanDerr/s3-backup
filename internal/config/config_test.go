@@ -14,7 +14,6 @@ import (
 
 func TestNewConfig(t *testing.T) {
 	// Not run in parallel because it modifies global environment variables
-	ctx := context.Background()
 
 	tc := map[string]struct {
 		setup         func(t *testing.T)
@@ -110,7 +109,7 @@ func TestNewConfig(t *testing.T) {
 				tc.setup(t)
 			}
 
-			got, err := NewConfig(ctx)
+			got, err := NewConfig()
 			if tc.wantErr {
 				require.Error(t, err)
 				assert.Nil(t, got)
@@ -241,7 +240,7 @@ func setupEnv(t *testing.T, key, value string) {
 	err := os.Setenv(key, value)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		os.Unsetenv(key)
+		_ = os.Unsetenv(key)
 	})
 }
 
@@ -289,7 +288,7 @@ func setupConfigFromYAML(t *testing.T, dirCount int, recursive bool) {
 	yamlContent.WriteString(fmt.Sprintf("recursive: %v\n", recursive))
 
 	tmpFile := filepath.Join(t.TempDir(), "config.yaml")
-	err := os.WriteFile(tmpFile, []byte(yamlContent.String()), 0644)
+	err := os.WriteFile(tmpFile, []byte(yamlContent.String()), 0600)
 	require.NoError(t, err)
 
 	setupEnv(t, EnvConfigFile, tmpFile)

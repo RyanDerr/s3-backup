@@ -1,3 +1,5 @@
+// Package config provides configuration management for the s3-backup tool,
+// including loading from YAML files and environment variables.
 package config
 
 import (
@@ -27,7 +29,7 @@ type Config struct {
 
 // NewConfig creates a new Config by loading from YAML file or environment variables.
 // Environment variables take precedence over YAML configuration.
-func NewConfig(ctx context.Context) (*Config, error) {
+func NewConfig() (*Config, error) {
 	const op = "config.NewConfig"
 
 	cfg := &Config{}

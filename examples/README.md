@@ -2,11 +2,19 @@
 
 This directory contains examples demonstrating how to configure and use the S3 backup tool.
 
+## Files in this directory
+
+- **[config.yaml](./config.yaml)** - Complete YAML configuration example
+- **[.env.example](./.env.example)** - Environment variables template
+- **[docker-compose.yaml](./docker-compose.yaml)** - Docker Compose with environment variables
+- **[docker-compose-with-config.yaml](./docker-compose-with-config.yaml)** - Docker Compose using config file
+- **[terraform/](./terraform/)** - Terraform configuration for S3 bucket setup with lifecycle policies
+
 ## Table of Contents
 
 - [Configuration Methods](#configuration-methods)
 - [S3 Key Structure](#s3-key-structure)
-- [Examples](#examples)
+- [Usage Examples](#usage-examples)
 
 ## Configuration Methods
 
@@ -57,6 +65,28 @@ export AWS_REGION=us-east-1
 ./s3-backup
 ```
 
+### 4. Docker Compose
+
+See [docker-compose.yaml](./docker-compose.yaml) for a complete example:
+
+```bash
+# Edit docker-compose.yaml with your configuration
+docker-compose up -d
+docker-compose logs -f
+```
+
+Or use [docker-compose-with-config.yaml](./docker-compose-with-config.yaml) to load from a config file.
+
+## S3 Bucket Setup with Terraform
+
+The [terraform/](./terraform/) directory contains a complete Terraform configuration to:
+
+- Create an S3 bucket for backups
+- Set up lifecycle policies to move old backups to Glacier
+- Automatically delete backups after a retention period
+
+See [terraform/README.md](./terraform/README.md) for details.
+
 ## S3 Key Structure
 
 Files are uploaded to S3 with the following key structure:
@@ -72,7 +102,7 @@ Where:
 - `{directory-name}`: Base name of the backup directory
 - `{relative-path}`: Relative path from the backup directory
 
-## Examples
+## Usage Examples
 
 ### Example 1: Non-Recursive Backup
 

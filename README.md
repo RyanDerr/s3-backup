@@ -177,9 +177,10 @@ If you find this useful:
 
 More documentation:
 
-- [DOCKER.md](DOCKER.md) - Docker setup details
-- [RELEASE.md](RELEASE.md) - How releases work
-- [examples/README.md](examples/README.md) - More config examples
+- [docs/DOCKER.md](docs/DOCKER.md) - Comprehensive Docker usage guide
+- [docs/RELEASE.md](docs/RELEASE.md) - Release process and versioning
+- [examples/](examples/) - Configuration examples and Docker Compose setups
+- [examples/terraform/](examples/terraform/) - Terraform configuration for S3 bucket setup
 
 Useful commands:
 

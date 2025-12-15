@@ -12,8 +12,8 @@ import (
 // collectAllFiles aggregates all files from the configured backup directories.
 // If recursion is enabled, it traverses subdirectories.
 // Returns a combined list of file paths with their S3-ready prefixes.
-func (s *S3Service) collectAllFiles(ctx context.Context) ([]string, error) {
-	const op = "s3.S3Service.collectAllFiles"
+func (s *Service) collectAllFiles(ctx context.Context) ([]string, error) {
+	const op = "s3.Service.collectAllFiles"
 
 	recursive := s.isRecursive()
 	dirs := s.getBackupDirs()
@@ -46,8 +46,8 @@ func (s *S3Service) collectAllFiles(ctx context.Context) ([]string, error) {
 
 // collectFilesFromDir collects all file paths from a single directory.
 // Files are prefixed with the base directory name for S3 organization.
-func (s *S3Service) collectFilesFromDir(ctx context.Context, dir string, recursive bool) ([]string, error) {
-	const op = "s3.S3Service.collectFilesFromDir"
+func (s *Service) collectFilesFromDir(ctx context.Context, dir string, recursive bool) ([]string, error) {
+	const op = "s3.Service.collectFilesFromDir"
 
 	if dir == "" {
 		return nil, fmt.Errorf("%s: %w", op, ErrEmptyDirectory)

@@ -14,14 +14,14 @@ import (
 	"github.com/robfig/cron/v3"
 )
 
-// S3API defines the interface for S3 operations needed by S3Service.
-type S3API interface {
+// API defines the interface for S3 operations needed by Service.
+type API interface {
 	PutObject(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
 }
 
-// S3Service wraps the AWS S3 client and provides backup functionality.
-type S3Service struct {
-	client       S3API
+// Service wraps the AWS S3 client and provides backup functionality.
+type Service struct {
+	client       API
 	bucketName   string
 	backupDirs   []string
 	recursive    bool
@@ -31,9 +31,9 @@ type S3Service struct {
 	mu     sync.RWMutex
 }
 
-// NewS3Service creates a new S3Service with the provided Config and optional client options.
+// NewS3Service creates a new Service with the provided Config and optional client options.
 // It validates that all backup directories exist and are accessible.
-func NewS3Service(ctx context.Context, cfg *config.Config, opts ...func(*s3.Options)) (*S3Service, error) {
+func NewS3Service(ctx context.Context, cfg *config.Config, opts ...func(*s3.Options)) (*Service, error) {
 	const op = "s3.NewS3Service"
 
 	if cfg == nil {
@@ -52,7 +52,7 @@ func NewS3Service(ctx context.Context, cfg *config.Config, opts ...func(*s3.Opti
 		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
-	return &S3Service{
+	return &Service{
 		client:       s3Client,
 		bucketName:   cfg.GetS3Bucket(),
 		backupDirs:   backupDirs,
@@ -87,7 +87,7 @@ func validateDirectories(dirs []string) error {
 
 // getBackupDirs returns a copy of the configured backup directories.
 // This method is safe to call concurrently.
-func (s *S3Service) getBackupDirs() []string {
+func (s *Service) getBackupDirs() []string {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	dirs := make([]string, len(s.backupDirs))
@@ -97,7 +97,7 @@ func (s *S3Service) getBackupDirs() []string {
 
 // isRecursive returns whether recursive backup is enabled.
 // This method is safe to call concurrently.
-func (s *S3Service) isRecursive() bool {
+func (s *Service) isRecursive() bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.recursive
@@ -105,8 +105,8 @@ func (s *S3Service) isRecursive() bool {
 
 // Backup performs the backup of files from the configured directories to the S3 bucket.
 // It respects context cancellation and returns all errors encountered during the backup.
-func (s *S3Service) Backup(ctx context.Context) error {
-	const op = "s3.S3Service.Backup"
+func (s *Service) Backup(ctx context.Context) error {
+	const op = "s3.Service.Backup"
 
 	files, err := s.collectAllFiles(ctx)
 	if err != nil {
@@ -122,8 +122,8 @@ func (s *S3Service) Backup(ctx context.Context) error {
 
 // backupAllFiles uploads all provided files to the S3 bucket.
 // It continues processing all files even if some fail, collecting all errors.
-func (s *S3Service) backupAllFiles(ctx context.Context, files []string) error {
-	const op = "s3.S3Service.backupAllFiles"
+func (s *Service) backupAllFiles(ctx context.Context, files []string) error {
+	const op = "s3.Service.backupAllFiles"
 
 	if len(files) == 0 {
 		return nil
@@ -151,18 +151,19 @@ func (s *S3Service) backupAllFiles(ctx context.Context, files []string) error {
 
 // backupFile uploads a single file to the configured S3 bucket.
 // The S3 object key is constructed with a timestamp prefix and the file's relative path.
-func (s *S3Service) backupFile(ctx context.Context, fileName string) error {
-	const op = "s3.S3Service.backupFile"
+func (s *Service) backupFile(ctx context.Context, fileName string) error {
+	const op = "s3.Service.backupFile"
 
 	if fileName == "" {
 		return fmt.Errorf("%s: %w", op, ErrEmptyFilename)
 	}
 
+	//nolint:gosec // G304: fileName comes from user's configured backup directories
 	file, err := os.Open(fileName)
 	if err != nil {
 		return fmt.Errorf("%s: failed to open file %s: %w", op, fileName, err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	key := buildObjectKey(fileName, time.Now())
 
@@ -182,8 +183,8 @@ func (s *S3Service) backupFile(ctx context.Context, fileName string) error {
 // Start begins the scheduled backup process in the background.
 // It runs backups according to the configured cron schedule.
 // Use Stop() to gracefully shut down the scheduler.
-func (s *S3Service) Start(ctx context.Context) error {
-	const op = "s3.S3Service.Start"
+func (s *Service) Start(ctx context.Context) error {
+	const op = "s3.Service.Start"
 
 	s.mu.Lock()
 	schedule := s.cronSchedule
@@ -219,6 +220,6 @@ func (s *S3Service) Start(ctx context.Context) error {
 }
 
 // Stop gracefully stops the scheduled backup process.
-func (s *S3Service) Stop() {
+func (s *Service) Stop() {
 	close(s.stopCh)
 }

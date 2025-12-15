@@ -54,12 +54,5 @@ WORKDIR /home/s3backup
 # HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 #   CMD pgrep -x s3-backup || exit 1
 
-# Document environment variables
-ENV BACKUP_DIRS="" \
-    BACKUP_RECURSIVE="false" \
-    BACKUP_CRON_SCHEDULE="0 0 */3 * *" \
-    AWS_REGION="" \
-    S3_BUCKET=""
-
 # Run the backup tool
 ENTRYPOINT ["/usr/local/bin/s3-backup"]

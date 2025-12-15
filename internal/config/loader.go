@@ -17,6 +17,7 @@ func loadFromYaml(filePath string, target any) error {
 		return nil
 	}
 
+	//nolint:gosec // G304: filePath comes from user's config file argument, which is expected
 	data, err := os.ReadFile(filePath)
 	if err != nil {
 		return fmt.Errorf("%s: failed to read file: %w", op, err)

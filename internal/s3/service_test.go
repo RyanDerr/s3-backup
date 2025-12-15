@@ -41,7 +41,7 @@ func TestNewS3Service(t *testing.T) {
 			},
 		},
 		"nil config": {
-			setup: func(t *testing.T) *config.Config {
+			setup: func(_ *testing.T) *config.Config {
 				return nil
 			},
 			wantErr: ErrNilConfig,
@@ -67,7 +67,7 @@ func TestNewS3Service(t *testing.T) {
 				cfg := createTestConfig(t, 1, false)
 				// Create a file instead of directory
 				filePath := filepath.Join(t.TempDir(), "file.txt")
-				require.NoError(t, os.WriteFile(filePath, []byte("test"), 0644))
+					require.NoError(t, os.WriteFile(filePath, []byte("test"), 0600))
 				cfg.BackupDirs = append(cfg.BackupDirs, filePath)
 				return cfg
 			},
@@ -119,13 +119,13 @@ func TestValidateDirectories(t *testing.T) {
 			},
 		},
 		"empty directory path": {
-			setup: func(t *testing.T) []string {
+			setup: func(_ *testing.T) []string {
 				return []string{""}
 			},
 			wantErr: ErrEmptyDirectory,
 		},
 		"nonexistent directory": {
-			setup: func(t *testing.T) []string {
+			setup: func(_ *testing.T) []string {
 				return []string{"/nonexistent/path"}
 			},
 			wantErr: ErrDirectoryNotFound,
@@ -133,7 +133,7 @@ func TestValidateDirectories(t *testing.T) {
 		"not a directory": {
 			setup: func(t *testing.T) []string {
 				filePath := filepath.Join(t.TempDir(), "file.txt")
-				require.NoError(t, os.WriteFile(filePath, []byte("test"), 0644))
+				require.NoError(t, os.WriteFile(filePath, []byte("test"), 0600))
 				return []string{filePath}
 			},
 			wantErr: ErrNotADirectory,
@@ -165,13 +165,13 @@ func TestValidateDirectories(t *testing.T) {
 	}
 }
 
-func TestS3Service_GetBackupDirs(t *testing.T) {
+func TestService_GetBackupDirs(t *testing.T) {
 	t.Parallel()
 
 	t.Run("returns configured directories", func(t *testing.T) {
 		t.Parallel()
 		dirs := []string{"/dir1", "/dir2"}
-		svc := &S3Service{backupDirs: dirs}
+		svc := &Service{backupDirs: dirs}
 
 		result := svc.getBackupDirs()
 
@@ -181,7 +181,7 @@ func TestS3Service_GetBackupDirs(t *testing.T) {
 	t.Run("returns a copy not a reference", func(t *testing.T) {
 		t.Parallel()
 		original := []string{"/dir1", "/dir2"}
-		svc := &S3Service{backupDirs: original}
+		svc := &Service{backupDirs: original}
 
 		returned := svc.getBackupDirs()
 		returned[0] = "/modified"
@@ -191,7 +191,7 @@ func TestS3Service_GetBackupDirs(t *testing.T) {
 	})
 }
 
-func TestS3Service_IsRecursive(t *testing.T) {
+func TestService_IsRecursive(t *testing.T) {
 	t.Parallel()
 
 	tc := map[string]struct {
@@ -211,13 +211,13 @@ func TestS3Service_IsRecursive(t *testing.T) {
 	for name, tc := range tc {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			svc := &S3Service{recursive: tc.recursive}
+			svc := &Service{recursive: tc.recursive}
 			assert.Equal(t, tc.want, svc.isRecursive())
 		})
 	}
 }
 
-func TestS3Service_BackupAllFiles(t *testing.T) {
+func TestService_BackupAllFiles(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -239,7 +239,7 @@ func TestS3Service_BackupAllFiles(t *testing.T) {
 	for name, tc := range tc {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			svc := &S3Service{bucketName: "test-bucket"}
+			svc := &Service{bucketName: "test-bucket"}
 
 			err := svc.backupAllFiles(ctx, tc.files)
 
@@ -252,13 +252,13 @@ func TestS3Service_BackupAllFiles(t *testing.T) {
 	}
 }
 
-func TestS3Service_BackupAllFiles_ContextCancellation(t *testing.T) {
+func TestService_BackupAllFiles_ContextCancellation(t *testing.T) {
 	t.Parallel()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	svc := &S3Service{bucketName: "test-bucket"}
+	svc := &Service{bucketName: "test-bucket"}
 	files := []string{"file1.txt", "file2.txt"}
 
 	err := svc.backupAllFiles(ctx, files)
@@ -267,18 +267,18 @@ func TestS3Service_BackupAllFiles_ContextCancellation(t *testing.T) {
 	assert.ErrorIs(t, err, context.Canceled)
 }
 
-func TestS3Service_BackupFile(t *testing.T) {
+func TestService_BackupFile(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
 
 	tc := map[string]struct {
-		setup   func(t *testing.T) (svc *S3Service, fileName string)
+		setup   func(t *testing.T) (svc *Service, fileName string)
 		wantErr error
 	}{
 		"empty filename": {
-			setup: func(t *testing.T) (*S3Service, string) {
-				svc := &S3Service{
+			setup: func(_ *testing.T) (*Service, string) {
+				svc := &Service{
 					client:     &mockS3Client{},
 					bucketName: "test-bucket",
 				}
@@ -287,8 +287,8 @@ func TestS3Service_BackupFile(t *testing.T) {
 			wantErr: ErrEmptyFilename,
 		},
 		"file does not exist": {
-			setup: func(t *testing.T) (*S3Service, string) {
-				svc := &S3Service{
+			setup: func(_ *testing.T) (*Service, string) {
+				svc := &Service{
 					client:     &mockS3Client{},
 					bucketName: "test-bucket",
 				}
@@ -297,12 +297,12 @@ func TestS3Service_BackupFile(t *testing.T) {
 			wantErr: os.ErrNotExist,
 		},
 		"successful upload": {
-			setup: func(t *testing.T) (*S3Service, string) {
+			setup: func(t *testing.T) (*Service, string) {
 				dir := t.TempDir()
 				filePath := filepath.Join(dir, "test.txt")
-				require.NoError(t, os.WriteFile(filePath, []byte("test content"), 0644))
+				require.NoError(t, os.WriteFile(filePath, []byte("test content"), 0600))
 
-				svc := &S3Service{
+				svc := &Service{
 					client:     &mockS3Client{},
 					bucketName: "test-bucket",
 				}
@@ -310,12 +310,12 @@ func TestS3Service_BackupFile(t *testing.T) {
 			},
 		},
 		"S3 upload fails": {
-			setup: func(t *testing.T) (*S3Service, string) {
+			setup: func(t *testing.T) (*Service, string) {
 				dir := t.TempDir()
 				filePath := filepath.Join(dir, "test.txt")
-				require.NoError(t, os.WriteFile(filePath, []byte("test content"), 0644))
+				require.NoError(t, os.WriteFile(filePath, []byte("test content"), 0600))
 
-				svc := &S3Service{
+				svc := &Service{
 					client:     &mockS3Client{shouldFail: true},
 					bucketName: "test-bucket",
 				}
@@ -343,25 +343,25 @@ func TestS3Service_BackupFile(t *testing.T) {
 	}
 }
 
-func TestS3Service_BackupAllFiles_WithErrors(t *testing.T) {
+func TestService_BackupAllFiles_WithErrors(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
 
 	tc := map[string]struct {
-		setup    func(t *testing.T) (svc *S3Service, files []string)
+		setup    func(t *testing.T) (svc *Service, files []string)
 		wantErr  bool
 		checkErr func(t *testing.T, err error)
 	}{
 		"all files succeed": {
-			setup: func(t *testing.T) (*S3Service, []string) {
+			setup: func(t *testing.T) (*Service, []string) {
 				dir := t.TempDir()
 				file1 := filepath.Join(dir, "file1.txt")
 				file2 := filepath.Join(dir, "file2.txt")
-				require.NoError(t, os.WriteFile(file1, []byte("content1"), 0644))
-				require.NoError(t, os.WriteFile(file2, []byte("content2"), 0644))
+				require.NoError(t, os.WriteFile(file1, []byte("content1"), 0600))
+				require.NoError(t, os.WriteFile(file2, []byte("content2"), 0600))
 
-				svc := &S3Service{
+				svc := &Service{
 					client:     &mockS3Client{},
 					bucketName: "test-bucket",
 				}
@@ -370,12 +370,12 @@ func TestS3Service_BackupAllFiles_WithErrors(t *testing.T) {
 			wantErr: false,
 		},
 		"some files fail": {
-			setup: func(t *testing.T) (*S3Service, []string) {
+			setup: func(t *testing.T) (*Service, []string) {
 				dir := t.TempDir()
 				file1 := filepath.Join(dir, "file1.txt")
-				require.NoError(t, os.WriteFile(file1, []byte("content1"), 0644))
+				require.NoError(t, os.WriteFile(file1, []byte("content1"), 0600))
 
-				svc := &S3Service{
+				svc := &Service{
 					client:     &mockS3Client{},
 					bucketName: "test-bucket",
 				}
@@ -390,14 +390,14 @@ func TestS3Service_BackupAllFiles_WithErrors(t *testing.T) {
 			},
 		},
 		"all files fail": {
-			setup: func(t *testing.T) (*S3Service, []string) {
+			setup: func(t *testing.T) (*Service, []string) {
 				dir := t.TempDir()
 				file1 := filepath.Join(dir, "file1.txt")
 				file2 := filepath.Join(dir, "file2.txt")
-				require.NoError(t, os.WriteFile(file1, []byte("content1"), 0644))
-				require.NoError(t, os.WriteFile(file2, []byte("content2"), 0644))
+				require.NoError(t, os.WriteFile(file1, []byte("content1"), 0600))
+				require.NoError(t, os.WriteFile(file2, []byte("content2"), 0600))
 
-				svc := &S3Service{
+				svc := &Service{
 					client:     &mockS3Client{shouldFail: true},
 					bucketName: "test-bucket",
 				}
@@ -439,7 +439,7 @@ type mockS3Client struct {
 
 var errMockS3Failure = errors.New("mock S3 failure")
 
-func (m *mockS3Client) PutObject(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error) {
+func (m *mockS3Client) PutObject(_ context.Context, params *s3.PutObjectInput, _ ...func(*s3.Options)) (*s3.PutObjectOutput, error) {
 	if m.shouldFail {
 		return nil, errMockS3Failure
 	}
@@ -452,7 +452,7 @@ func (m *mockS3Client) PutObject(ctx context.Context, params *s3.PutObjectInput,
 	return &s3.PutObjectOutput{}, nil
 }
 
-func TestS3Service_Start(t *testing.T) {
+func TestService_Start(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -483,7 +483,7 @@ func TestS3Service_Start(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			svc := &S3Service{
+			svc := &Service{
 				client:       &mockS3Client{},
 				bucketName:   "test-bucket",
 				backupDirs:   []string{t.TempDir()},
@@ -527,12 +527,12 @@ func TestS3Service_Start(t *testing.T) {
 	}
 }
 
-func TestS3Service_Stop(t *testing.T) {
+func TestService_Stop(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
 
-	svc := &S3Service{
+	svc := &Service{
 		client:       &mockS3Client{},
 		bucketName:   "test-bucket",
 		backupDirs:   []string{t.TempDir()},

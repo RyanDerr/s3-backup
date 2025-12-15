@@ -1,4 +1,4 @@
-version: "1.63"
+version: "2"
 
 run:
   timeout: 5m
@@ -8,15 +8,15 @@ run:
 linters:
   enable:
     - errcheck      # Check for unchecked errors
-    - gosimple      # Simplify code
     - govet         # Vet examines Go source code
     - ineffassign   # Detect ineffectual assignments
     - staticcheck   # Advanced go vet
     - unused        # Check for unused constants, variables, functions and types
-    - gofmt         # Check formatting
-    - goimports     # Check imports
     - misspell      # Check for misspelled words
     - revive        # Fast, configurable, extensible, flexible linter
     - gocritic      # Provides diagnostics that check for bugs, performance and style issues
     - gosec         # Security checks
-    - stylecheck    # Stylecheck is a replacement for golint
+    - unconvert     # Remove unnecessary type conversions
+    - unparam       # Reports unused function parameters
+    - gocyclo       # Computes and checks cyclomatic complexity
+    - bodyclose     # Checks whether HTTP response body is closed successfully

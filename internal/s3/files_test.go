@@ -56,7 +56,7 @@ func TestCollectFilesFromDir(t *testing.T) {
 				dir := t.TempDir()
 				createFile(t, dir, "file1.txt", "content1")
 				subdir := filepath.Join(dir, "subdir")
-				require.NoError(t, os.Mkdir(subdir, 0755))
+				require.NoError(t, os.Mkdir(subdir, 0750))
 				createFile(t, subdir, "file2.txt", "content2")
 				return dir, false
 			},
@@ -67,7 +67,7 @@ func TestCollectFilesFromDir(t *testing.T) {
 				dir := t.TempDir()
 				createFile(t, dir, "file1.txt", "content1")
 				subdir := filepath.Join(dir, "subdir")
-				require.NoError(t, os.Mkdir(subdir, 0755))
+				require.NoError(t, os.Mkdir(subdir, 0750))
 				createFile(t, subdir, "file2.txt", "content2")
 				return dir, true
 			},
@@ -79,11 +79,11 @@ func TestCollectFilesFromDir(t *testing.T) {
 				createFile(t, dir, "root.txt", "root")
 
 				level1 := filepath.Join(dir, "level1")
-				require.NoError(t, os.Mkdir(level1, 0755))
+				require.NoError(t, os.Mkdir(level1, 0750))
 				createFile(t, level1, "file1.txt", "content1")
 
 				level2 := filepath.Join(level1, "level2")
-				require.NoError(t, os.Mkdir(level2, 0755))
+				require.NoError(t, os.Mkdir(level2, 0750))
 				createFile(t, level2, "file2.txt", "content2")
 
 				return dir, true
@@ -91,13 +91,13 @@ func TestCollectFilesFromDir(t *testing.T) {
 			wantMinFiles: 3,
 		},
 		"empty directory path": {
-			setup: func(t *testing.T) (string, bool) {
+			setup: func(_ *testing.T) (string, bool) {
 				return "", false
 			},
 			wantErr: ErrEmptyDirectory,
 		},
 		"nonexistent directory": {
-			setup: func(t *testing.T) (string, bool) {
+			setup: func(_ *testing.T) (string, bool) {
 				return "/nonexistent/path", false
 			},
 			wantErr: os.ErrNotExist,
@@ -109,7 +109,7 @@ func TestCollectFilesFromDir(t *testing.T) {
 			t.Parallel()
 
 			dir, recursive := tc.setup(t)
-			svc := &S3Service{
+			svc := &Service{
 				backupDirs: []string{dir},
 				recursive:  recursive,
 			}
@@ -145,7 +145,7 @@ func TestCollectFilesFromDir_ContextCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately
 
-	svc := &S3Service{
+	svc := &Service{
 		backupDirs: []string{dir},
 		recursive:  false,
 	}
@@ -162,16 +162,16 @@ func TestCollectAllFiles(t *testing.T) {
 	ctx := context.Background()
 
 	tc := map[string]struct {
-		setup        func(t *testing.T) *S3Service
+		setup        func(t *testing.T) *Service
 		wantMinFiles int
 		wantErr      bool
 	}{
 		"single directory with files": {
-			setup: func(t *testing.T) *S3Service {
+			setup: func(t *testing.T) *Service {
 				dir := t.TempDir()
 				createFile(t, dir, "file1.txt", "content1")
 				createFile(t, dir, "file2.txt", "content2")
-				return &S3Service{
+				return &Service{
 					backupDirs: []string{dir},
 					recursive:  false,
 				}
@@ -179,7 +179,7 @@ func TestCollectAllFiles(t *testing.T) {
 			wantMinFiles: 2,
 		},
 		"multiple directories with files": {
-			setup: func(t *testing.T) *S3Service {
+			setup: func(t *testing.T) *Service {
 				dir1 := t.TempDir()
 				createFile(t, dir1, "file1.txt", "content1")
 
@@ -187,7 +187,7 @@ func TestCollectAllFiles(t *testing.T) {
 				createFile(t, dir2, "file2.txt", "content2")
 				createFile(t, dir2, "file3.txt", "content3")
 
-				return &S3Service{
+				return &Service{
 					backupDirs: []string{dir1, dir2},
 					recursive:  false,
 				}
@@ -195,15 +195,15 @@ func TestCollectAllFiles(t *testing.T) {
 			wantMinFiles: 3,
 		},
 		"recursive directories": {
-			setup: func(t *testing.T) *S3Service {
+			setup: func(t *testing.T) *Service {
 				dir := t.TempDir()
 				createFile(t, dir, "root.txt", "root")
 
 				subdir := filepath.Join(dir, "subdir")
-				require.NoError(t, os.Mkdir(subdir, 0755))
+				require.NoError(t, os.Mkdir(subdir, 0750))
 				createFile(t, subdir, "sub.txt", "sub")
 
-				return &S3Service{
+				return &Service{
 					backupDirs: []string{dir},
 					recursive:  true,
 				}
@@ -211,8 +211,8 @@ func TestCollectAllFiles(t *testing.T) {
 			wantMinFiles: 2,
 		},
 		"empty directories": {
-			setup: func(t *testing.T) *S3Service {
-				return &S3Service{
+			setup: func(t *testing.T) *Service {
+				return &Service{
 					backupDirs: []string{t.TempDir()},
 					recursive:  false,
 				}
@@ -248,7 +248,7 @@ func TestCollectAllFiles_ContextCancellation(t *testing.T) {
 	// Cancel immediately
 	cancel()
 
-	svc := &S3Service{
+	svc := &Service{
 		backupDirs: []string{dir},
 		recursive:  false,
 	}
@@ -295,7 +295,7 @@ func TestFileCollector_Walk(t *testing.T) {
 			setup: func(t *testing.T) (*fileCollector, string, os.DirEntry) {
 				dir := t.TempDir()
 				subdir := filepath.Join(dir, "subdir")
-				require.NoError(t, os.Mkdir(subdir, 0755))
+				require.NoError(t, os.Mkdir(subdir, 0750))
 
 				fc := &fileCollector{
 					ctx:       ctx,
@@ -318,7 +318,7 @@ func TestFileCollector_Walk(t *testing.T) {
 			setup: func(t *testing.T) (*fileCollector, string, os.DirEntry) {
 				dir := t.TempDir()
 				subdir := filepath.Join(dir, "subdir")
-				require.NoError(t, os.Mkdir(subdir, 0755))
+				require.NoError(t, os.Mkdir(subdir, 0750))
 
 				fc := &fileCollector{
 					ctx:       ctx,
@@ -421,9 +421,8 @@ func TestBuildObjectKey(t *testing.T) {
 }
 
 // createFile creates a file with the given content in the specified directory.
-func createFile(t *testing.T, dir, name, content string) string {
+func createFile(t *testing.T, dir, name, content string) {
 	t.Helper()
 	filePath := filepath.Join(dir, name)
-	require.NoError(t, os.WriteFile(filePath, []byte(content), 0644))
-	return filePath
+	require.NoError(t, os.WriteFile(filePath, []byte(content), 0600))
 }
