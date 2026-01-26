@@ -1,6 +1,6 @@
 # Multi-stage build for minimal image size
 # Stage 1: Build the Go binary
-FROM --platform=$BUILDPLATFORM golang:1.25.5-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.25.6-alpine AS builder
 
 # Build arguments for cross-compilation
 ARG TARGETOS
