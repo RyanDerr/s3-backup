@@ -281,11 +281,11 @@ func setupConfigFromYAML(t *testing.T, dirCount int, recursive bool) {
 	var yamlContent strings.Builder
 	yamlContent.WriteString("backup_dirs:\n")
 	for _, dir := range dirs {
-		yamlContent.WriteString(fmt.Sprintf("  - %s\n", dir))
+		_, _ = fmt.Fprintf(&yamlContent, "  - %s\n", dir)
 	}
 	yamlContent.WriteString("aws_region: eu-west-1\n")
 	yamlContent.WriteString("s3_bucket: yaml-bucket\n")
-	yamlContent.WriteString(fmt.Sprintf("recursive: %v\n", recursive))
+	_, _ = fmt.Fprintf(&yamlContent, "recursive: %v\n", recursive)
 
 	tmpFile := filepath.Join(t.TempDir(), "config.yaml")
 	err := os.WriteFile(tmpFile, []byte(yamlContent.String()), 0600)
