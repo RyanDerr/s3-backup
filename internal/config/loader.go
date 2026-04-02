@@ -13,6 +13,7 @@ func loadFromYaml(filePath string, target any) error {
 	const op = "config.loadFromYaml"
 
 	// If file doesn't exist, return nil to allow env var fallback
+	//nolint:gosec // G703: filePath comes from user-specified config path and is intentionally allowed
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
 		return nil
 	}
