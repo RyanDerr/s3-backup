@@ -34,7 +34,7 @@ RUN CGO_ENABLED=${CGO_ENABLED} GOOS=${TARGETOS} GOARCH=${TARGETARCH} go build \
 RUN if [ "$BUILDPLATFORM" = "$TARGETPLATFORM" ]; then ./s3-backup --help || echo "Binary built successfully"; fi
 
 # Stage 2: Create minimal runtime image
-FROM alpine:3.23
+FROM alpine:3.24
 
 # Copy ca-certificates and tzdata from builder (avoids QEMU emulation issues)
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
